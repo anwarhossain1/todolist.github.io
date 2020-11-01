@@ -1,17 +1,31 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import { loadFromStorageToState, saveToStorageFromState } from './localStorage';
+import reducers from './reducers';
+import App from './App';
+import './index.css';
+import throttle from 'lodash/throttle';
+
+const persistedState = loadFromStorageToState();
+
+const store = createStore(
+  reducers,
+  persistedState
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+// throttle ensures storage can only be written to once per second
+store.subscribe(throttle(() => { 
+  saveToStorageFromState({
+    todos: store.getState().todos
+  }) 
+}, 1000));
+
+ReactDOM.render(
+  <Provider store={ store }>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+);
